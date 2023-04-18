@@ -1,0 +1,294 @@
+
+  <!DOCTYPE html>
+<html>
+   <head>
+      <title>Daily Job Card For Technicians</title>
+      <style>
+         body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+         }
+         h1 {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            color: #FFFFFF;
+            background-color: #4CAF50;
+            padding: 10px;
+         }
+         form {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+         }
+         label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+         }
+         input[type=text], input[type=date], input[type=number] {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: none;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+         }
+         input[readonly] {
+            background-color: #f2f2f2;
+            color: #333333;
+            cursor: not-allowed;
+         }
+         input[type=submit] {
+            background-color: #4CAF50;
+            color: #FFFFFF;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+         }
+         input[type=submit]:hover {
+            background-color: #3e8e41;
+         }
+         table {
+            border-collapse: collapse;
+            width: 100%;
+         }
+         th, td {
+            text-align: left;
+            padding: 10px;
+         }
+         th {
+            background-color: #4CAF50;
+            color: #FFFFFF;
+         }
+         tr:nth-child(even) {
+            background-color: #f2f2f2;
+         }
+         .table-wrapper {
+            overflow-x: auto;
+         }
+         .form-wrapper {
+            background-color: #f2f2f2;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+         }
+         .form-wrapper legend {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+         }
+         .form-wrapper label {
+            margin-bottom: 5px;
+            font-weight: normal;
+         }
+         .form-wrapper input[type=text] {
+            margin-bottom: 10px;
+            font-size: 18px;
+         }
+         .form-wrapper input[type=date] {
+            margin-bottom: 10px;
+            font-size: 18px;
+         }
+         .form-wrapper input[type=number] {
+            margin-bottom: 10px;
+            font-size: 18px;
+         }
+         .form-wrapper input[type=text]:focus,
+         .form-wrapper input[type=date]:focus,
+         .form-wrapper input[type=number]:focus {
+            border: 2px solid #4CAF50;
+            box-shadow: none;
+            outline: none;
+         }
+         .form-wrapper input[type=submit] {
+            margin-top: 20px;
+         }
+      </style>
+   <body>
+      <script>
+         function addNewRow() {
+           var table = document.getElementById("activityTable");
+           var row = table.insertRow();
+           for (var i = 0; i < 8; i++) {
+             var cell = row.insertCell(i);
+             var input = document.createElement("input");
+             input.type = "text";
+             input.name = "newRow";
+             if (i == 5) {
+               input.setAttribute("class", "actualHours");
+               input.type = "number";
+               input.step = "any";
+               input.addEventListener("input", function(event) {
+                 updateTotal();
+               });
+             } else if (i == 1) {
+                 input.setAttribute("class", "workOrderNo");
+                 input.type = "text";
+                 input.addEventListener("input", function(event) {
+                 event.target.value = event.target.value.toUpperCase(); autoResizeInput(event.target)});
+             } else if (i == 0) {
+               input.setAttribute("class", "activityCode");
+               input.addEventListener("input", function(event) {
+                 event.target.value = event.target.value.toUpperCase();
+                 populateMachineTypeAndDescription(event.target); autoResizeInput(event.target)
+               });
+             } else if (i == 6) {
+               input.setAttribute("class", "status");
+               input.addEventListener("input", function(event) {
+                 event.target.value = event.target.value.toUpperCase();
+               });
+             } else if (i == 7) {
+               input.setAttribute("class", "shift");
+               input.type = "number";
+               input.addEventListener("input", function(event) {
+                 event.target.value = Math.floor(Math.abs(event.target.value));
+               });
+             }
+             cell.appendChild(input);
+           }
+         }
+         
+         
+         
+         function populateMachineTypeAndDescription(input) {
+           var activityCode = input.value;
+           if (activityCode) {
+             google.script.run.withSuccessHandler(function(data) {
+               if (data) {
+                 var row = input.parentNode.parentNode;
+                 row.cells[2].firstChild.value = data.machineType;
+                 row.cells[3].firstChild.value = data.activityDescription;
+               }
+             }).getMachineTypeAndDescription(activityCode);
+             google.script.run.withSuccessHandler(function(employeeName) {
+               row.cells[1].firstChild.value = employeeName;
+             }).getEmployeeName(document.getElementById("employeeId").value);
+         
+           }
+         }
+         
+         function updateTotal() {
+           var actualHoursInputs = document.getElementsByClassName("actualHours");
+           var total = 0;
+           for (var i = 0; i < actualHoursInputs.length; i++) {
+             if (actualHoursInputs[i].value) {
+               total += parseFloat(actualHoursInputs[i].value);
+             }
+           }
+           document.getElementById("totalActualHours").textContent = total.toFixed(2);
+         }
+         
+         document.addEventListener("input", function(event) {
+           if (event.target && event.target.matches(".actualHours, .quantity")) {
+             updateTotal();
+           }
+         });
+         
+         function getEmployeeName(employeeId) {
+           if (employeeId) {
+             google.script.run.withSuccessHandler(function(name) {
+               if (name) {
+                 document.getElementById("employeeName").value = name;
+               } else {
+                 document.getElementById("employeeName").value = "";
+               }
+             }).getEmployeeName(employeeId);
+           }
+         }
+
+         function autoResizeInput(element) {
+  // Reset field width
+  element.style.width = 'auto';
+  
+  // Set width to content width
+  element.style.width = element.scrollWidth + 'px';
+}
+
+
+      </script>
+   </head>
+   <body>
+      <h1>Daily Job Card For Technicians</h1>
+      <form id="myForm" onsubmit="handleSubmit(); return false;">
+         <fieldset>
+            <legend>Employee Information</legend>
+            <label for="employeeId">Employee ID:</label>
+            <input type="text" id="employeeId" name="employeeId" required onchange="getEmployeeName(this.value)" style="width: 300px;"><br><br>
+            <label for="employeeName">Employee Name:</label>
+            <input type="text" id="employeeName" name="employeeName"  readonly style="width: 300px;"><br><br>
+            <label for="date">Date:</label>
+            <input type="date" id="date" name="date" required style="width: 300px;"><br><br>
+         </fieldset>
+         <div class="table-wrapper">
+         <table id="activityTable">
+            <thead>
+               <tr>
+                  <th>Activity Code</th>
+                  <th>Work Order No.</th>
+                  <th>Machine Type</th>
+                  <th>Activity Description</th>
+                  <th>Quantity</th>
+                  <th>Actual Hours</th>
+                  <th>Status</th>
+                  <th>Shift</th>
+               </tr>
+            </thead>
+            <tbody>
+               <tr>
+                  <td><input type="text" name="activityCode" class="activityCode" oninput="this.value = this.value.toUpperCase(); populateMachineTypeAndDescription(this); autoResizeInput(this)"></td>
+                  <td><input type="text"  name="workOrderNo" oninput="autoResizeInput(this)" ></td>
+                  <td><input type="text" name="machineType"></td>
+                  <td><input type="text" name="activityDescription"></td>
+                  <td><input type="number" name="quantity" ></td>
+                  <td><input type="number" name="actualHours" class="actualHours" step="any"></td>
+                  <td><input type="text" name="status" oninput="this.value = this.value.toUpperCase()"></td>
+                  <td><input type="number" name="shift"></td>
+               </tr>
+            </tbody>
+         </table>
+         </div>
+         <br>
+         <input type="button" value="Add New Row" onclick="addNewRow();"><br><br>
+         <p>Total Actual Hours: <span id="totalActualHours">0.00</span></p>
+         <input type="submit" value="Submit">
+      </form>
+      <div id="successMessage" style="display: none;">
+         <p style="font-size: 2em;">Job Card Submitted Successfully 😊.</p>
+         <input type="button" value="Submit Another Job Card" onclick="submitAnotherJobCard();">
+      </div>
+      <script>
+         function handleSubmit() {
+           google.script.run.withSuccessHandler(showSuccessMessage).processForm(document.forms[0]);
+           document.getElementById("totalActualHours").textContent = "0.00";
+           var table = document.getElementById("activityTable");
+           var rowCount = table.rows.length;
+           for (var i = rowCount - 1; i > 0; i--) {
+         table.deleteRow(i);
+         }
+         addNewRow();
+         }
+         
+         
+         
+         function showSuccessMessage() {
+           document.getElementById("myForm").style.display = "none";
+           document.getElementById("successMessage").style.display = "block";
+         }
+         
+         function submitAnotherJobCard() {
+         document.getElementById("myForm").reset();
+         document.getElementById("successMessage").style.display = "none";
+         document.getElementById("myForm").style.display = "block";
+         }
+         
+         
+      </script>
+   </body>
+</html>
